@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// 对话模型
+model Chat {
+  // id是字符串类型，默认自动生成
+  id         String    @id @default(uuid())
+  title      String
+  // 类型为DateTime，并且在更新记录的时候自动更新时间，这个属性在对话列表排序的时候用到
+  updateTime DateTime  @updatedAt
+  // 插件自动添加了消息数组，因为对话和消息是一对多
+  Message    Message[]
+}
+
+// 消息模型
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  role       String
+  // 消息的创建时间默认当前时间
+  createTime DateTime @default(now())
+  // 消息关联的对话id
+  chatId     String
+  // 对话和消息之间的relation mapping，对话和消息一对多
+  chat       Chat     @relation(fields: [chatId], references: [id])
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // provider = "postgresql" // 默认数据库，为了简化，改成sqlite
+  provider = "sqlite"
+  // url      = env("DATABASE_URL") 
+  url      = "file:./chat-page.sqlite" // 数据库文件的路径
+}
