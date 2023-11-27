@@ -6,9 +6,10 @@ import ReactTextareaAutosize from "react-textarea-autosize";
 import { useRef, useState } from "react";
 import { v4 as uuidV4 } from 'uuid';
 import { Message, MessageRequestBody } from "@/types/chat";
-import { useAppContext } from "@/app/AppContext";
+import { useAppContext } from "@/components/AppContext";
 import { ActionType } from "@/reducers/AppReducer";
 import React from "react";
+import { useEventBusContext } from "@/components/EventBusContext";
 export default function ChatInput() {
   // 保存用户输入的消息
   const [messageText, setMessageText] = useState('');
@@ -19,9 +20,8 @@ export default function ChatInput() {
   const stopRef = useRef(false);
   // 在同一个对话中使用相同的对话id，维护一个当前对话状态的ref
   const chatRef = useRef('');
-
+  const { publish } = useEventBusContext();
   /* 发送消息 */
-  // 最普通的发送消息
   const send = async () => {
     // 向全局添加一条消息，并且返回此时全局的消息列表
     /* 
@@ -42,7 +42,7 @@ export default function ChatInput() {
     const messages = messageList.concat([message]);
     doSend(messages)
   }
-  // 删除消息重新发送
+  /* 删除消息重新发送 */
   const reSend = async () => {
     // 不需要向全局状态的消息列表中再添加消息
     const messages = [...messageList]; // 浅复制一份临时的消息列表的数据
@@ -86,9 +86,12 @@ export default function ChatInput() {
       return;
     }
     const { data } = await response.json();
+
     // 对于新对话，会给chatRef赋值id
     if (!chatRef.current) {
       chatRef.current = data.message.chatId;
+      // 产生新对话的时候，通知更新对话列表
+      publish('fetchChatList');
     }
     return data.message;
   }

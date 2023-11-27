@@ -1,6 +1,3 @@
 {
-  "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/api/message/update/route": "app/api/message/update/route.js",
-  "/page": "app/page.js",
-  "/api/chat/route": "app/api/chat/route.js"
+  "/page": "app/page.js"
 }

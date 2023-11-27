@@ -1,5 +1,5 @@
 "use client"
-import { useAppContext } from '@/app/AppContext';
+import { useAppContext } from '@/components/AppContext';
 import Button from '@/components/common/Button';
 import { ActionType } from '@/reducers/AppReducer';
 import { MdDarkMode, MdLightMode, MdInfo } from 'react-icons/md';

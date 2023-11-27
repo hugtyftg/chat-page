@@ -1,8 +1,9 @@
 "use client"
 import { groupByDate } from "@/common/util";
 import { Chat } from "@/types/chat";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ChatItem from "./ChatItem";
+import { useEventBusContext } from "@/components/EventBusContext";
 export default function ChatList() {
   const [chatList, setChatList] = useState<Chat[]>([
     {
@@ -110,13 +111,25 @@ export default function ChatList() {
       title: "我好想吃饭啊",
       updateTime: Date.now() + 1000 * 60 * 60 * 24 * 27
     },
-])
-  // 点击选中的对话
+  ])
+  // 选中的对话
   const [selectedChat, setSelectedChat] = useState<Chat>();
-  // 缓存计算分组列表
+  // 缓存分组列表
   const groupList = useMemo(() => {
     return groupByDate(chatList);
   }, [chatList])
+  
+  /* 在组件订阅和取消订阅 */
+  const { subscribe, unsubscribe } = useEventBusContext();
+  useEffect(() => {
+    const callback: EventListener = () => {
+      console.log('fetchChatList');
+    }
+    subscribe('fetchChatList', callback);
+    return () => {
+      unsubscribe('fetchChatList', callback);
+    }
+  }, [])
   //判断当前item是否是被选中
   return <div className="flex-1 mb-[48px] mt-2 flex flex-col overflow-y-auto">
       {groupList.map(([date, list]) => {
