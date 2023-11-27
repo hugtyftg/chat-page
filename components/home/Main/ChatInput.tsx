@@ -20,7 +20,23 @@ export default function ChatInput() {
   /* 发送消息 */
   // 最普通的发送消息
   const send =async () => {
-    const messages = addMsg();
+    // 向全局添加一条消息，并且返回此时全局的消息列表
+    /* 
+      用户在输入框中输入的请求消息chatGPT请求格式
+      不在通过客户端生成消息的id，
+      而是在发送内容之前，在服务端创建消息记录
+      id和chatId都给空字符串
+     */
+    const message: Message = await createOrUpdateMsg({
+      id: '',
+      role: 'user',
+      content: messageText,
+      chatId: ''
+    })
+    // 向全局状态中添加当前新增的消息，更新消息时间队列
+    dispatch({type: ActionType.ADD_MESSAGE, message});
+    // chatGPT的api请求还需要历史消息，所以需要把全局状态中的消息和历史消息连接在一起
+    const messages = messageList.concat([message]);
     doSend(messages)
   }
   // 删除消息重新发送
@@ -38,21 +54,26 @@ export default function ChatInput() {
     }
     doSend(messages);
   }
-  /* 发送消息的步骤功能 */
-  // 向全局添加一条消息，并且返回此时全局的消息列表
-  const addMsg = (): Message[] => {
-    // 用户在输入框中输入的请求消息chatGPT请求格式
-    const message: Message = {
-      id: uuidV4(),
-      role: 'user',
-      content: messageText,
+  // 不在通过客户端生成消息的id，而是在发送内容之前，在服务端创建消息记录
+  const createOrUpdateMsg = async (message: Message) => {
+    const response = await fetch('/api/message/update', {
+      method: 'POST',
+      headers: {
+        // 以json字符串的形式发送POST请求
+        "Content-Type": 'application/json'
+      },
+      // 将请求体包装成JSON字符串作为请求体内容
+      body: JSON.stringify(message)
+    })
+    // 检查状态码，如果状态码不正常直接返回并打印日志
+    if (!response.ok) {
+      console.log(response.statusText);
+      return;
     }
-    // 向全局状态中添加当前新增的消息，更新消息时间队列
-    dispatch({type: ActionType.ADD_MESSAGE, message});
-    // chatGPT的api请求还需要历史消息，所以需要把全局状态中的消息和历史消息连接在一起
-    const messages = messageList.concat([message]);
-    return messages;
+    const { data } = await response.json();
+    return data.message;
   }
+
   // 发送客户端请求得到服务端接口的数据
   const doSend = async (messages: Message[]) => {
     // 将消息列表时间序列和模型
@@ -89,6 +110,7 @@ export default function ChatInput() {
       id: uuidV4(),
       role: 'assistant',
       content: '',
+      chatId: ''
     }
     dispatch({type: ActionType.ADD_MESSAGE, message: responseMessage});
     // 接受服务端返回的消息的时候，将streamingId改为正在接受的消息的id

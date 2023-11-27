@@ -1,3 +1,4 @@
+// 维护的global prismaClient
 import { PrismaClient } from "@prisma/client"
 
 const prismaClientSingleton = () => {
