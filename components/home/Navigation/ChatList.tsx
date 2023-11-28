@@ -1,117 +1,11 @@
 "use client"
 import { groupByDate } from "@/common/util";
 import { Chat } from "@/types/chat";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ChatItem from "./ChatItem";
 import { useEventBusContext } from "@/components/EventBusContext";
 export default function ChatList() {
-  const [chatList, setChatList] = useState<Chat[]>([
-    {
-      id: "1",
-      title: "mmy的第一个nextjs实战项目",
-      updateTime: Date.now()
-    },
-    {
-        id: "2",
-        title: "nextjs性能真不错呀",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 1
-    },
-    {
-        id: "3",
-        title: "nextjs性能真不错呀",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 1
-    },
-    {
-        id: "4",
-        title: "nextjs性能真不错呀",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 2
-    },
-    {
-        id: "5",
-        title: "nextjs性能真不错呀",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 2
-    },
-    {
-        id: "6",
-        title: "nextjs性能真不错呀",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 2
-    },
-    {
-        id: "7",
-        title: "nextjs性能真不错呀",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 2
-    },
-    {
-        id: "8",
-        title: "next",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 2
-    },
-    {
-        id: "9",
-        title: "nextj s",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 21
-    },
-    {
-        id: "10",
-        title: "nextjs性能真不错呀",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 22
-    },
-    {
-        id: "11",
-        title: "nextjs性能真不错呀",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 23
-    },
-    {
-        id: "12",
-        title: "nextjs性能真不错呀",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 24
-    },
-    {
-        id: "13",
-        title: "nextjs性能真不错呀",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 25
-    },
-    {
-        id: "14",
-        title: "nextjs性能真不错呀",
-        updateTime: Date.now() - 1000 * 60 * 60 * 24 * 26
-    },
-    {
-        id: "15",
-        title: "我好想吃饭啊",
-        updateTime: Date.now() + 1000 * 60 * 60 * 24 * 27
-    },
-    {
-      id: "16",
-      title: "我好想吃饭啊",
-      updateTime: Date.now() + 1000 * 60 * 60 * 24 * 27
-    },
-    {
-      id: "17",
-      title: "我好想吃饭啊",
-      updateTime: Date.now() + 1000 * 60 * 60 * 24 * 27
-    },
-    {
-      id: "18",
-      title: "我好想吃饭啊",
-      updateTime: Date.now() + 1000 * 60 * 60 * 24 * 27
-    },
-    {
-      id: "19",
-      title: "我好想吃饭啊",
-      updateTime: Date.now() + 1000 * 60 * 60 * 24 * 27
-    },
-    {
-      id: "20",
-      title: "我好想吃饭啊",
-      updateTime: Date.now() + 1000 * 60 * 60 * 24 * 27
-    },
-    {
-      id: "21",
-      title: "我好想吃饭啊",
-      updateTime: Date.now() + 1000 * 60 * 60 * 24 * 27
-    },
-  ])
+  const [chatList, setChatList] = useState<Chat[]>([])
   // 选中的对话
   const [selectedChat, setSelectedChat] = useState<Chat>();
   // 缓存分组列表
@@ -119,7 +13,7 @@ export default function ChatList() {
     return groupByDate(chatList);
   }, [chatList])
   
-  /* 在组件订阅和取消订阅 */
+  /* 在组件渲染完毕后订阅和取消订阅 */
   const { subscribe, unsubscribe } = useEventBusContext();
   useEffect(() => {
     const callback: EventListener = () => {
@@ -129,6 +23,42 @@ export default function ChatList() {
     return () => {
       unsubscribe('fetchChatList', callback);
     }
+  }, [])
+
+  /* 分页查询请求 */
+  // 维护当前分页，默认为第一页
+  const pageRef = useRef(1);
+  
+  // 获取分页数据
+  const getData = async () => {
+    // 请求分页查询接口
+    const response = await fetch(`/api/chat/list?page=${pageRef.current}`, {
+      method: 'GET'
+    });
+    if (!response.ok) {
+      console.error('prisma page request interface error!');
+      return;
+    }
+    const {data} = await response.json();
+    // 如果是请求第一页的数据，直接覆盖对话列表
+    if (pageRef.current === 1) {
+      setChatList(data.list);
+    } else {
+      // 如果是请求其他页的数据，则追加到末尾
+      setChatList((list) => list.concat(data.list));
+    }
+  }
+  // 在第一次渲染和每次收到事件通知的时候刷新对话列表
+  useEffect(() => {
+    getData();
+  }, [])
+  useEffect(() => {
+    const callback: EventListener = () => {
+      pageRef.current = 1
+      getData()
+    }
+    subscribe("fetchChatList", callback);
+    return () => unsubscribe("fetchChatList", callback);
   }, [])
   //判断当前item是否是被选中
   return <div className="flex-1 mb-[48px] mt-2 flex flex-col overflow-y-auto">
