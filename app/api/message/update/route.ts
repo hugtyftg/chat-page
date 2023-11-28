@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         updateTime: new Date()
       },
       where: {
-        id: data.id
+        id: data.chatId
       }
     })
   }
