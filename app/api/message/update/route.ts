@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   // 解构出请求体中的id，并且将其余的信息都作为data（rest params）
   const {id, ...data} = body;
+
   // 如果data中chatId为空字符，说明这是一个新的对话，需要重新生成chat对象
   if (!data.chatId) {
     // 向数据库中添加一条新的record
@@ -19,7 +20,18 @@ export async function POST(request: NextRequest) {
     })
     // 将id赋值给消息参数
     data.chatId = chat.id;
+  } else {
+    // 如果data中chatId不为空字符，说明这不是一个全新的对话，应该更新一下对话的时间
+    await prisma.chat.update({
+      data: {
+        updateTime: new Date()
+      },
+      where: {
+        id: data.chatId
+      }
+    })
   }
+  
   // prisma中的upsert方法用于创建或更新记录
   // 如果id为空字符串，则更新；如果id为空字符串，说明这是一条新的message，需要新建
   const message = await prisma.message.upsert({
