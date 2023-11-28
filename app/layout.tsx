@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import '@/styles/globals.css';
 import '@/styles/markdown.css';
-import AppContextProvider from './AppContext'
+import AppContextProvider from '../components/AppContext'
+import EventBusContextProvider from '@/components/EventBusContext';
 
 export const metadata: Metadata = {
   title: 'My First Next App',
@@ -17,7 +18,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AppContextProvider>
-          {children}
+          <EventBusContextProvider>
+            {children}
+          </EventBusContextProvider>
         </AppContextProvider>
       </body>
     </html>

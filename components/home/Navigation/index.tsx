@@ -1,6 +1,6 @@
 import Button from "@/components/common/Button";
 import Menubar from "./Mebubar";
-import { useAppContext } from "@/app/AppContext";
+import { useAppContext } from "@/components/AppContext";
 import Toolbar from "./Toolbar";
 import ChatList from "./ChatList";
 

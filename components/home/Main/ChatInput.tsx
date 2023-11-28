@@ -6,9 +6,10 @@ import ReactTextareaAutosize from "react-textarea-autosize";
 import { useRef, useState } from "react";
 import { v4 as uuidV4 } from 'uuid';
 import { Message, MessageRequestBody } from "@/types/chat";
-import { useAppContext } from "@/app/AppContext";
+import { useAppContext } from "@/components/AppContext";
 import { ActionType } from "@/reducers/AppReducer";
 import React from "react";
+import { useEventBusContext } from "@/components/EventBusContext";
 export default function ChatInput() {
   // 保存用户输入的消息
   const [messageText, setMessageText] = useState('');
@@ -17,9 +18,11 @@ export default function ChatInput() {
   // 停止生成消息
   // 点击按钮后，stopRef存储的值会变成true，但是这并不引起JSX函数的重新执行、页面重新渲染
   const stopRef = useRef(false);
+  // 在同一个对话中使用相同的对话id，维护一个当前对话状态的ref
+  const chatRef = useRef('');
+  const { publish } = useEventBusContext();
   /* 发送消息 */
-  // 最普通的发送消息
-  const send =async () => {
+  const send = async () => {
     // 向全局添加一条消息，并且返回此时全局的消息列表
     /* 
       用户在输入框中输入的请求消息chatGPT请求格式
@@ -27,11 +30,11 @@ export default function ChatInput() {
       而是在发送内容之前，在服务端创建消息记录
       id和chatId都给空字符串
      */
-    const message: Message = await createOrUpdateMsg({
+    const message: Message  = await createOrUpdateMsg({
       id: '',
       role: 'user',
       content: messageText,
-      chatId: ''
+      chatId: chatRef.current
     })
     // 向全局状态中添加当前新增的消息，更新消息时间队列
     dispatch({type: ActionType.ADD_MESSAGE, message});
@@ -39,12 +42,23 @@ export default function ChatInput() {
     const messages = messageList.concat([message]);
     doSend(messages)
   }
-  // 删除消息重新发送
-  const reSend =async () => {
+  /* 删除消息重新发送 */
+  const reSend = async () => {
     // 不需要向全局状态的消息列表中再添加消息
     const messages = [...messageList]; // 浅复制一份临时的消息列表的数据
     // 还需要删除最后一条回复的消息
-    if (messages.length !== 0 && messages[messages.length - 1].role === 'assistant') {
+    if (
+      messages.length !== 0 && 
+      messages[messages.length - 1].role === 'assistant'
+    ) {
+      // 删除服务端数据库中的这条消息
+      const result = await deleteMsg(messages[messages.length - 1].id);
+      // 如果接口返回失败，则直接返回并打印错误日志
+      if (!result) {
+        console.log('delete error');
+        return;
+      }
+      // 删除全局状态中的这条消息
       dispatch({
         type:ActionType.REMOVE_MESSAGE, 
         message: messages[messages.length - 1]
@@ -55,6 +69,7 @@ export default function ChatInput() {
     doSend(messages);
   }
   // 不在通过客户端生成消息的id，而是在发送内容之前，在服务端创建消息记录
+  // 使用/api/message/update接口
   const createOrUpdateMsg = async (message: Message) => {
     const response = await fetch('/api/message/update', {
       method: 'POST',
@@ -71,9 +86,30 @@ export default function ChatInput() {
       return;
     }
     const { data } = await response.json();
+
+    // 对于新对话，会给chatRef赋值id
+    if (!chatRef.current) {
+      chatRef.current = data.message.chatId;
+      // 产生新对话的时候，通知更新对话列表
+      publish('fetchChatList');
+    }
     return data.message;
   }
-
+  // 从数据库中删除消息，使用/api/message/delete接口发送querystring的POST请求
+  const deleteMsg = async (id: string): Promise<boolean> => {
+    const response = await fetch(`/api/message/delete?id=${id}`, {
+      method: 'POST',
+      headers: {
+        // 以json字符串的形式发送POST请求
+        "Content-Type": 'application/json'
+      }
+    })
+    // 请求之后获取返回的状态码
+    const {code} = await response.json();
+    
+    // 如果状态码为0说明删除成功
+    return code === 0;
+  } 
   // 发送客户端请求得到服务端接口的数据
   const doSend = async (messages: Message[]) => {
     // 将消息列表时间序列和模型
@@ -106,12 +142,14 @@ export default function ChatInput() {
     }
     // 排除这两种异常情况，说明请求成功
     // 将服务端API返回的消息放入全局消息列表中
-    const responseMessage: Message = {
-      id: uuidV4(),
+    // 回复的消息也需要先在服务端创建好
+    const responseMessage = await createOrUpdateMsg({
+      id: '',
       role: 'assistant',
       content: '',
-      chatId: ''
-    }
+      chatId: chatRef.current
+    })
+    // 向全局状态中添加当前新增的消息，更新消息时间队列
     dispatch({type: ActionType.ADD_MESSAGE, message: responseMessage});
     // 接受服务端返回的消息的时候，将streamingId改为正在接受的消息的id
     dispatch({
@@ -149,7 +187,9 @@ export default function ChatInput() {
         message: {...responseMessage, content}
       })
     }
-    // 接受服务端message stream完毕后重置状态
+    // 接受消息，更新服务端数据库的记录
+    createOrUpdateMsg({ ...responseMessage, content})
+    // 接受消息，重置状态
     dispatch({
       type: ActionType.UPDATE,
       field: 'streamingId',

@@ -2,7 +2,7 @@ import { SiOpenai } from "react-icons/si"
 import { Message } from "@/types/chat";
 import { AiOutlineUser } from "react-icons/ai";
 import Markdown from "@/components/common/Markdown";
-import { useAppContext } from "@/app/AppContext";
+import { useAppContext } from "@/components/AppContext";
 import React from "react";
 export default function MessageList() {
   // 不使用测试数据，而是读取全局状态消息列表来渲染

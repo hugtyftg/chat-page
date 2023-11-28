@@ -1,4 +1,4 @@
-import { useAppContext } from "@/app/AppContext"
+import { useAppContext } from "@/components/AppContext"
 import Button from "@/components/common/Button";
 import { ActionType } from "@/reducers/AppReducer";
 import { PiLightningFill, PiShootingStarBold } from "react-icons/pi"

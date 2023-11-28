@@ -1,8 +1,7 @@
-// 在服务端生成uuid而不是在客户端
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
-// api/message接口用户创建消息、生成id
+// 用户创建消息、在服务端生成id和updateTime
 // 注意，不能添加default，这样会找不到接口！
 export async function POST(request: NextRequest) {
   // 读取请求体
