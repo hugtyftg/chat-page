@@ -4,10 +4,13 @@ import { Chat } from "@/types/chat";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ChatItem from "./ChatItem";
 import { useEventBusContext } from "@/components/EventBusContext";
+import { useAppContext } from "@/components/AppContext";
+import { ActionType } from "@/reducers/AppReducer";
 export default function ChatList() {
   const [chatList, setChatList] = useState<Chat[]>([])
   // 选中的对话
-  const [selectedChat, setSelectedChat] = useState<Chat>();
+  // const [selectedChat, setSelectedChat] = useState<Chat>();
+  const { state: {selectedChat}, dispatch } = useAppContext();
   // 缓存分组列表
   const groupList = useMemo(() => {
     return groupByDate(chatList);
@@ -76,7 +79,11 @@ export default function ChatList() {
                 item={item}
                 selected={selected}
                 onSelected={(chat) => {
-                  setSelectedChat(chat);
+                  dispatch({
+                    type: ActionType.UPDATE,
+                    field: 'selectedChat',
+                    value: chat
+                  })
                 }}
               />
             })}

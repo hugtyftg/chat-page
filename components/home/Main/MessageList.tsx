@@ -1,12 +1,20 @@
 import { SiOpenai } from "react-icons/si"
 import { Message } from "@/types/chat";
-import { AiOutlineUser } from "react-icons/ai";
+import { AiOutlineUser } from 'react-icons/ai'
 import Markdown from "@/components/common/Markdown";
 import { useAppContext } from "@/components/AppContext";
-import React from "react";
+import React, { useEffect } from "react";
+import { ActionType } from "@/reducers/AppReducer";
 export default function MessageList() {
-  // 不使用测试数据，而是读取全局状态消息列表来渲染
-  const {state: {messageList, streamingId}} = useAppContext();
+  // 不使用测试数据，而是通过全局的selectedChat从服务端请求数据更新全局的messageList，然后读取全局状态消息列表来渲染
+  const {
+    state: {
+      messageList, 
+      streamingId, 
+      selectedChat
+    }, 
+    dispatch
+  } = useAppContext();
   // const messageList: Message[] = [
     //     {
     //         id: "1",
@@ -31,7 +39,38 @@ export default function MessageList() {
     //         content:
     //             "你可以使用 JavaScript 的 `getBoundingClientRect()` 方法来获取一个元素相对于视窗的位置。它返回一个对象，包含了元素的高度、宽度以及其相对于视窗的左、上、右、下位置。这将帮助我们了解元素当前与视窗左上角的 X 和 Y 轴的距离。\n\n我们可以通过添加`mousemove`和`resize`事件监听器来持续更新元素的位置信息。以下是一个可行的策略：\n\n1. 选取你需要监听的元素。\n\n```javascript\nlet element = document.getElementById('your-element-id');\n```\n\n2. 定义一个函数来获取元素位置信息。\n\n```javascript\nfunction getElementPosition(element) {\n    let bounding = element.getBoundingClientRect();\n    let x = bounding.left;\n    let y = bounding.top;\n    return { x, y };\n}\n```\n\n3. 注册`mousemove`和`resize`事件来动态更新元素位置信息。\n\n```javascript\nwindow.addEventListener('mousemove', function() {\n    let position = getElementPosition(element);\n    console.log('X: ' + position.x + ', Y: ' + position.y); \n});\n\nwindow.addEventListener('resize', function() {\n    let position = getElementPosition(element);\n    console.log('X: ' + position.x + ', Y: ' + position.y); \n});\n```\n\n通过这些步骤，你就可以在控制台看到你的元素相对于视窗的 X 和 Y 位置信息。以上是最基本的实现，你可以根据你的需要进行修改和扩展。"
     //     }
-    // ]
+  // ]
+  
+  /* 
+    在每次选中的chat发生变化的时候：
+    如果当前有选中对话则请求数据并更新
+    如果当前没有选中对话则清空全局的messageList
+  */
+  useEffect(() => {
+    if (selectedChat) {
+      getData(selectedChat.id);
+    } else {
+      dispatch({
+        type: ActionType.UPDATE,
+        field: 'messageList',
+        value: []
+      })
+    }
+  }, [selectedChat])
+  /* 获取当前chatId的所有message并且更新全局维护的messageList */
+  async function getData(chatId: string) {
+    const response = await fetch(`/api/message/list?chatId=${chatId}`);
+    if (!response.ok) {
+      console.log(response.statusText);
+      return;
+    }
+    const {data} = await response.json();
+    dispatch({
+      type: ActionType.UPDATE,
+      field: 'messageList',
+      value: data.list
+    })
+  }
     
   return (
     <div className="w-full pt-10 pb-48 dark:text-gray-300">
