@@ -1,4 +1,4 @@
-import { Message } from "@/types/chat"
+import { Chat, Message } from "@/types/chat"
 
 export type State = {
   displayNavigation: boolean,
@@ -8,6 +8,8 @@ export type State = {
   messageList: Message[],
   // 目前正在回复消息的id，实现消息回答过程中不能发送新消息
   streamingId: string
+  // 当前选中的chat
+  selectedChat?: Chat
 }
 
 export enum ActionType {
