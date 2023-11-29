@@ -3,7 +3,7 @@ import { MdRefresh } from "react-icons/md"
 import { PiLightningFill, PiStopBold } from "react-icons/pi"
 import { FiSend } from "react-icons/fi"
 import ReactTextareaAutosize from "react-textarea-autosize";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { v4 as uuidV4 } from 'uuid';
 import { Message, MessageRequestBody } from "@/types/chat";
 import { useAppContext } from "@/components/AppContext";
@@ -14,12 +14,12 @@ export default function ChatInput() {
   // 保存用户输入的消息
   const [messageText, setMessageText] = useState('');
   // 参数中还需要附加历史消息，所以要从全局状态中读取消息列表、模型类型
-  const { state: {messageList, currentModel, streamingId}, dispatch } = useAppContext();
+  const { state: {messageList, currentModel, streamingId, selectedChat}, dispatch } = useAppContext();
   // 停止生成消息
   // 点击按钮后，stopRef存储的值会变成true，但是这并不引起JSX函数的重新执行、页面重新渲染
   const stopRef = useRef(false);
   // 在同一个对话中使用相同的对话id，维护一个当前对话状态的ref
-  const chatRef = useRef('');
+  const chatIdRef = useRef('');
   const { publish } = useEventBusContext();
   /* 发送消息 */
   const send = async () => {
@@ -34,13 +34,13 @@ export default function ChatInput() {
       id: '',
       role: 'user',
       content: messageText,
-      chatId: chatRef.current
+      chatId: chatIdRef.current
     })
     // 向全局状态中添加当前新增的消息，更新消息时间队列
     dispatch({type: ActionType.ADD_MESSAGE, message});
     // chatGPT的api请求还需要历史消息，所以需要把全局状态中的消息和历史消息连接在一起
     const messages = messageList.concat([message]);
-    doSend(messages)
+    doSend(messages);
   }
   /* 删除消息重新发送 */
   const reSend = async () => {
@@ -87,11 +87,17 @@ export default function ChatInput() {
     }
     const { data } = await response.json();
 
-    // 对于新对话，会给chatRef赋值id
-    if (!chatRef.current) {
-      chatRef.current = data.message.chatId;
+    // 对于新对话，会给chatIdRef赋值id
+    if (!chatIdRef.current) {
+      chatIdRef.current = data.message.chatId;
       // 产生新对话的时候，通知更新对话列表
       publish('fetchChatList');
+      // 创建新对话后，左侧导航栏自动选择当前对话
+      dispatch({
+        type: ActionType.UPDATE,
+        field: 'selectedChat',
+        value: { id: chatIdRef.current }
+      })
     }
     return data.message;
   }
@@ -112,6 +118,9 @@ export default function ChatInput() {
   } 
   // 发送客户端请求得到服务端接口的数据
   const doSend = async (messages: Message[]) => {
+    // 发送消息时要重置stopRef，因为切换对话的时候可能没有接受消息，从而保证每次执行都是正常状态
+    // 如果不重置，下面都会按照中断执行
+    stopRef.current = false;
     // 将消息列表时间序列和模型
     const body: MessageRequestBody = { messages, model: currentModel };
     // 测试数据：将用户输入的messageText包装成JSON字符串，作为POST的请求体
@@ -147,7 +156,7 @@ export default function ChatInput() {
       id: '',
       role: 'assistant',
       content: '',
-      chatId: chatRef.current
+      chatId: chatIdRef.current
     })
     // 向全局状态中添加当前新增的消息，更新消息时间队列
     dispatch({type: ActionType.ADD_MESSAGE, message: responseMessage});
@@ -167,9 +176,8 @@ export default function ChatInput() {
     let content = '';
     // 循环读数据流
     while (!done) {
-      // 中断的时候要重置标志位stopRef、使用control终止fetch、streamingId重置，同时结束循环
+      // 中断的时候要使用control终止fetch、streamingId重置，同时结束循环
       if (stopRef.current) {
-        stopRef.current = false;
         controller.abort();
         dispatch({type: ActionType.UPDATE, field: 'streamingId', value: ''})
         continue;
@@ -197,6 +205,16 @@ export default function ChatInput() {
     })
   }
 
+  /* 全局切换selectedChat的时候，更新chatInput中的对话id */
+  useEffect(() => {
+    // 判断是否是同一个对话，如果是同一个对话则不需要操作
+    if (chatIdRef.current === selectedChat?.id) {
+      return;
+    }
+    // 如果不是同一个对话，则修改当前的chatId，并停止生成对话
+    chatIdRef.current = selectedChat?.id ?? '';
+    stopRef.current = true;
+  }, [selectedChat])
   return <div className="absolute bottom-0 inset-x-0 bg-gradient-to-b from-[rgba(255,255,255,0)] from-[13.94%] to-[#fff] to-[54.73%] pt-10 dark:from-[rgba(53,55,64,0)] dark:to-[#353740] dark:to-[58.85%]">
     <div className="w-full max-x-4xl mx-auto flex flex-col items-center px-4 space-y-4">
       {/* 只有在消息列表不为空的情况下才显示重新生成和停止生成，在消息列表不为空且正在生成消息的时候显示停止生成 */}
@@ -227,6 +245,10 @@ export default function ChatInput() {
           // React手动实现MVVM
           value={messageText}
           onChange={(e) => setMessageText(e.target.value)}
+          // 回车键发送消息
+          onKeyDown={(e) => {
+            e.key === 'Enter' && send()
+          }}
         />
         <Button 
           icon={FiSend}

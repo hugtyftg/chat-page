@@ -34,11 +34,20 @@ export default function Menubar() {
     field: 'displayNavigation',
     value: false
   })}
+  // 将全局选中的对话变空
+  const createNewChat = () => {
+    dispatch({
+      type: ActionType.UPDATE,
+      field: 'selectedChat',
+      value: null
+    })
+  }
   return <div className='flex space-x-3'>
     <Button
       icon={HiPlus}
       variant='outline'
       className='flex-1'
+      onClick={createNewChat}
     >新建对话</Button>
     <Button
       icon={LuPanelLeft}
