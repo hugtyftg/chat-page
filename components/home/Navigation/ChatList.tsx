@@ -7,7 +7,7 @@ import { useEventBusContext } from "@/components/EventBusContext";
 import { useAppContext } from "@/components/AppContext";
 import { ActionType } from "@/reducers/AppReducer";
 export default function ChatList() {
-  const [chatList, setChatList] = useState<Chat[]>([])
+  const [chatList, setChatList] = useState<Chat[]>([]);
   // 选中的对话
   // const [selectedChat, setSelectedChat] = useState<Chat>();
   const { state: {selectedChat}, dispatch } = useAppContext();
@@ -34,34 +34,33 @@ export default function ChatList() {
   // 获取分页数据
   const getData = async () => {
     // 如果当前没有在加载数据，才能发送数据请求，否则直接返回
-    if (loadingRef.current === false) {
-      loadingRef.current = true;
-      // 请求分页查询接口
-      const response = await fetch(`/api/chat/list?page=${pageRef.current}`, {
-        method: 'GET',
-      });
-      if (!response.ok) {
-        console.error('prisma page request interface error!');
-        loadingRef.current = false;
-        return;
-      }
-      // 每次发起请求后，page递增
-      pageRef.current++;
-      // 请求成功后，解析获取数据
-      const {data} = await response.json();
-      // 每次获取数据后更新 是否有更多数据
-      hasMoreRef.current = data.hasMore;
-      // 如果是请求第一页的数据，直接覆盖对话列表
-      if (pageRef.current === 1) {
-        setChatList(data.list);
-      } else {
-        // 如果是请求其他页的数据，则追加到末尾
-        setChatList((list) => list.concat(data.list));
-      }
-      loadingRef.current = false;
-    } else {
-      return
+    if (loadingRef.current) {
+      return;
     }
+    loadingRef.current = true;
+    // 请求分页查询接口
+    const response = await fetch(`/api/chat/list?page=${pageRef.current}`, {
+      method: 'GET',
+    });
+    if (!response.ok) {
+      console.error('prisma page request interface error!');
+      loadingRef.current = false;
+      return;
+    }
+    // 请求成功后，解析获取数据
+    const { data } = await response.json();
+    // 每次获取数据后更新 是否有更多数据
+    hasMoreRef.current = data.hasMore;
+    // 如果是请求第一页的数据，直接覆盖对话列表
+    if (pageRef.current === 1) {
+      setChatList(data.list);
+    } else {
+      // 如果是请求其他页的数据，则追加到末尾
+      setChatList((list) => list.concat(data.list));
+    }
+    // 每次发起请求后，page递增
+    // pageRef.current++;
+    loadingRef.current = false;
   }
   // 在第一次渲染和每次收到事件通知的时候刷新对话列表
   useEffect(() => {
@@ -111,6 +110,8 @@ export default function ChatList() {
       loadingRef.current = false;
     }
     }, [])
+  console.log(groupList);
+  
   //判断当前item是否是被选中
   return <div className="flex-1 mb-[48px] mt-2 flex flex-col overflow-y-auto">
       {groupList.map(([date, list]) => {
