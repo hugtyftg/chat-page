@@ -1,32 +1,35 @@
-"use client"
-import { groupByDate } from "@/common/util";
-import { Chat } from "@/types/chat";
-import { useEffect, useMemo, useRef, useState } from "react";
-import ChatItem from "./ChatItem";
-import { useEventBusContext } from "@/components/EventBusContext";
-import { useAppContext } from "@/components/AppContext";
-import { ActionType } from "@/reducers/AppReducer";
+'use client';
+import { groupByDate } from '@/common/util';
+import { Chat } from '@/types/chat';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import ChatItem from './ChatItem';
+import { useEventBusContext } from '@/components/EventBusContext';
+import { useAppContext } from '@/components/AppContext';
+import { ActionType } from '@/reducers/AppReducer';
 export default function ChatList() {
   const [chatList, setChatList] = useState<Chat[]>([]);
   // 选中的对话
   // const [selectedChat, setSelectedChat] = useState<Chat>();
-  const { state: {selectedChat}, dispatch } = useAppContext();
+  const {
+    state: { selectedChat },
+    dispatch,
+  } = useAppContext();
   // 缓存分组列表
   const groupList = useMemo(() => {
     return groupByDate(chatList);
-  }, [chatList])
-  
+  }, [chatList]);
+
   /* 在组件渲染完毕后订阅和取消订阅 */
   const { subscribe, unsubscribe } = useEventBusContext();
   useEffect(() => {
     const callback: EventListener = () => {
       console.log('fetchChatList');
-    }
+    };
     subscribe('fetchChatList', callback);
     return () => {
       unsubscribe('fetchChatList', callback);
-    }
-  }, [])
+    };
+  }, []);
   /* 分页查询请求 */
   // 维护当前分页，默认为第一页
   const pageRef = useRef(1);
@@ -61,25 +64,25 @@ export default function ChatList() {
     // 每次发起请求后，page递增
     // pageRef.current++;
     loadingRef.current = false;
-  }
+  };
   // 在第一次渲染和每次收到事件通知的时候刷新对话列表
   useEffect(() => {
     getData();
     return () => {
       loadingRef.current = false;
-    }
-  }, [])
+    };
+  }, []);
   useEffect(() => {
     const callback: EventListener = () => {
-      pageRef.current = 1
-      getData()
-    }
-    subscribe("fetchChatList", callback);
+      pageRef.current = 1;
+      getData();
+    };
+    subscribe('fetchChatList', callback);
     return () => {
-      unsubscribe("fetchChatList", callback);
+      unsubscribe('fetchChatList', callback);
       loadingRef.current = false;
-    }
-  }, [])
+    };
+  }, []);
 
   /* 触底加载（上拉加载） */
   const loadMoreRef = useRef(null); // 触底的空格div元素
@@ -95,50 +98,55 @@ export default function ChatList() {
         // 如果元素处于可见状态，并且有下一页数据，发起请求下一页数据
         if (entries[0].isIntersecting && hasMoreRef.current) {
           getData();
-          console.log('visible');
         }
-      })
+      });
       observer.observe(div);
     }
     // cleanup，组件销毁的时候取消监听
     return () => {
       // 如果observer和div都存在，则取消监听
-      if(observer && div) {
+      if (observer && div) {
         observer.unobserve(div);
         observer = null;
       }
       loadingRef.current = false;
-    }
-    }, [])
+    };
+  }, []);
   console.log(groupList);
-  
+
   //判断当前item是否是被选中
-  return <div className="flex-1 mb-[48px] mt-2 flex flex-col overflow-y-auto">
+  return (
+    <div className="flex-1 mb-[48px] mt-2 flex flex-col overflow-y-auto">
       {groupList.map(([date, list]) => {
-        return <div key={date}>
-          {/* css粘性定位：relative和fixed的组合 */}
-          <div className="sticky top-0 z-10 p-3 text-sm bg-gray-900 text-gray-500">
-            {date}
+        return (
+          <div key={date}>
+            {/* css粘性定位：relative和fixed的组合 */}
+            <div className="sticky top-0 z-10 p-3 text-sm bg-gray-900 text-gray-500">
+              {date}
+            </div>
+            <ul>
+              {list.map((item: Chat) => {
+                const selected = selectedChat?.id === item.id;
+                return (
+                  <ChatItem
+                    key={item.id}
+                    item={item}
+                    selected={selected}
+                    onSelected={(chat) => {
+                      dispatch({
+                        type: ActionType.UPDATE,
+                        field: 'selectedChat',
+                        value: chat,
+                      });
+                    }}
+                  />
+                );
+              })}
+            </ul>
           </div>
-          <ul>
-            {list.map((item: Chat) => {
-              const selected = selectedChat?.id === item.id;
-              return <ChatItem 
-                key={item.id}
-                item={item}
-                selected={selected}
-                onSelected={(chat) => {
-                  dispatch({
-                    type: ActionType.UPDATE,
-                    field: 'selectedChat',
-                    value: chat
-                  })
-                }}
-              />
-            })}
-          </ul>
-        </div>
+        );
       })}
-    <div ref={loadMoreRef}>&nbsp;</div>
-  </div>
+      <div ref={loadMoreRef}>&nbsp;</div>
+    </div>
+  );
 }

@@ -1,4 +1,4 @@
-"use client"
+'use client';
 import { useAppContext } from '@/components/AppContext';
 import Button from '@/components/common/Button';
 import { ActionType } from '@/reducers/AppReducer';
@@ -26,34 +26,37 @@ export default function Menubar() {
   //   ></Button>
   // </div>
   // 使用useReducer替换useState管理复杂状态
-  const {
-    dispatch
-  } = useAppContext();
-  const clickHandler = () => {dispatch({
-    type: ActionType.UPDATE,
-    field: 'displayNavigation',
-    value: false
-  })}
+  const { dispatch } = useAppContext();
+  const clickHandler = () => {
+    dispatch({
+      type: ActionType.UPDATE,
+      field: 'displayNavigation',
+      value: false,
+    });
+  };
   // 将全局选中的对话变空
   const createNewChat = () => {
     dispatch({
       type: ActionType.UPDATE,
       field: 'selectedChat',
-      value: null
-    })
-  }
-  return <div className='flex space-x-3'>
-    <Button
-      icon={HiPlus}
-      variant='outline'
-      className='flex-1'
-      onClick={createNewChat}
-    >新建对话</Button>
-    <Button
-      icon={LuPanelLeft}
-      variant='outline'
-      onClick={clickHandler}
-    ></Button>
-  </div>
-
+      value: null,
+    });
+  };
+  return (
+    <div className="flex space-x-3">
+      <Button
+        icon={HiPlus}
+        variant="outline"
+        className="flex-1"
+        onClick={createNewChat}
+      >
+        新建对话
+      </Button>
+      <Button
+        icon={LuPanelLeft}
+        variant="outline"
+        onClick={clickHandler}
+      ></Button>
+    </div>
+  );
 }

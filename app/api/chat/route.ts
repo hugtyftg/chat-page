@@ -1,6 +1,6 @@
-import { delaySimulation } from "@/common/util";
-import { MessageRequestBody } from "@/types/chat";
-import { NextRequest } from "next/server";
+import { delaySimulation } from '@/common/util';
+import { MessageRequestBody } from '@/types/chat';
+import { NextRequest } from 'next/server';
 // 服务端接口
 // 测试接口：模拟chatGPT返回的数据
 export async function POST(request: NextRequest) {
@@ -20,8 +20,8 @@ export async function POST(request: NextRequest) {
         controller.enqueue(encoder.encode(messageText[i]));
       }
       controller.close();
-    }
-  })
+    },
+  });
   // 将生成的数据流封装成Response返回给客户端
   return new Response(stream);
 }

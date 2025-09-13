@@ -1,7 +1,7 @@
-import type { Config } from 'tailwindcss'
+import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  darkMode: "class",
+  darkMode: 'class',
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -14,10 +14,10 @@ const config: Config = {
         primary: {
           500: '#00B981',
           600: '#059669',
-        }
-      }
+        },
+      },
     },
   },
   plugins: [],
-}
-export default config
+};
+export default config;
