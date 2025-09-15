@@ -6,13 +6,13 @@ import { PiLightningFill, PiShootingStarBold } from 'react-icons/pi';
 export default function ModelSelect() {
   const models = [
     {
-      id: 'gpy-3.5-turbo',
-      name: 'GPT-3.5',
+      id: 'deepseek-chat',
+      name: 'deepseek-chat',
       icon: PiLightningFill,
     },
     {
-      id: 'gpt-4',
-      name: 'GPT-4',
+      id: 'deepseek-reasoner',
+      name: 'deepseek-reasoner',
       icon: PiShootingStarBold,
     },
   ];
