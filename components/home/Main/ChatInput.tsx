@@ -22,7 +22,7 @@ export default function ChatInput() {
   const stopRef = useRef(false);
   // 在同一个对话中使用相同的对话id，维护一个当前对话状态的ref
   const chatIdRef = useRef('');
-  const { publish } = useEventBusContext();
+  const { emit } = useEventBusContext();
   /* 发送消息 */
   const send = async () => {
     // 向全局添加一条消息，并且返回此时全局的消息列表
@@ -93,7 +93,7 @@ export default function ChatInput() {
     if (!chatIdRef.current) {
       chatIdRef.current = data.message.chatId;
       // 产生新对话的时候，通知更新对话列表
-      publish('fetchChatList');
+      emit('fetchChatList');
       // 创建新对话后，左侧导航栏自动选择当前对话
       dispatch({
         type: ActionType.UPDATE,

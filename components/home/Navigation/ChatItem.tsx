@@ -22,7 +22,7 @@ export default function ChatItem({ item, selected, onSelected }: Props) {
   }, [selected]);
 
   /* 修改对话标题 */
-  const { publish } = useEventBusContext();
+  const { emit } = useEventBusContext();
   // 临时保存对话标题
   const [title, setTitle] = useState(item.title);
   const updateChat = async () => {
@@ -40,7 +40,7 @@ export default function ChatItem({ item, selected, onSelected }: Props) {
     const { code } = await response.json();
     // 如果数据修改成功，那么通过事件通知来更新本地的chatList
     if (code === 0) {
-      publish('fetchChatList');
+      emit('fetchChatList');
     }
   };
 
@@ -60,7 +60,7 @@ export default function ChatItem({ item, selected, onSelected }: Props) {
     const { code } = await response.json();
     // 如果数据修改成功，那么通过事件通知来更新本地的chatList
     if (code === 0) {
-      publish('fetchChatList');
+      emit('fetchChatList');
       // 删除当前选中的chat之后，应该将客户端的selectedChat置空
       dispatch({
         type: ActionType.UPDATE,

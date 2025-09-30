@@ -12,11 +12,11 @@ import {
 type EventListener = (data?: any) => void;
 type EventBusContextProps = {
   // 订阅，参数是事件类型和cb
-  subscribe: (eventType: string, cb: EventListener) => void;
+  on: (eventType: string, cb: EventListener) => void;
   // 取消订阅，参数是事件类型和cb
-  unsubscribe: (eventType: string, cb: EventListener) => void;
-  // 发布事件，参数是事件类型和事件携带的数据
-  publish: (eventType: string, data?: any) => void;
+  off: (eventType: string, cb: EventListener) => void;
+  // 发布，参数是事件类型和事件携带的数据
+  emit: (eventType: string, data?: any) => void;
 };
 // 创建EventBusContext
 const EventBusContext = createContext<EventBusContextProps>(null!);
@@ -36,7 +36,7 @@ export default function EventBusContextProvider({
     {}
   );
   // 使用useCallback缓存函数，只会在依赖数组改变的时候重新生成，因此依赖数组必须为listeners
-  const subscribe = useCallback(
+  const on = useCallback(
     (event: string, callback: EventListener) => {
       // 如果没有该事件类型，则初始化一个该事件类型的数组
       if (!listeners[event]) {
@@ -49,7 +49,7 @@ export default function EventBusContextProvider({
     },
     [listeners]
   );
-  const unsubscribe = useCallback(
+  const off = useCallback(
     (event: string, callback: EventListener) => {
       // 先判断该类型是否有回调数组
       if (listeners[event]) {
@@ -60,7 +60,7 @@ export default function EventBusContextProvider({
     },
     [listeners]
   );
-  const publish = useCallback(
+  const emit = useCallback(
     (event: string, data?: any) => {
       // 如果该类型有回调数组，则遍历数组，调用每个回调函数
       if (listeners[event]) {
@@ -72,8 +72,8 @@ export default function EventBusContextProvider({
 
   // 将函数封装到contextValue中，使用useMemo减少不必要的开销
   const contextValue = useMemo(() => {
-    return { subscribe, unsubscribe, publish };
-  }, [subscribe, unsubscribe, publish]);
+    return { on, off, emit };
+  }, [on, off, emit]);
   return (
     <EventBusContext.Provider value={contextValue}>
       {children}

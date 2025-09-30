@@ -20,14 +20,14 @@ export default function ChatList() {
   }, [chatList]);
 
   /* 在组件渲染完毕后订阅和取消订阅 */
-  const { subscribe, unsubscribe } = useEventBusContext();
+  const { on, off } = useEventBusContext();
   useEffect(() => {
     const callback: EventListener = () => {
       console.log('fetchChatList');
     };
-    subscribe('fetchChatList', callback);
+    on('fetchChatList', callback);
     return () => {
-      unsubscribe('fetchChatList', callback);
+      off('fetchChatList', callback);
     };
   }, []);
   /* 分页查询请求 */
@@ -77,9 +77,9 @@ export default function ChatList() {
       pageRef.current = 1;
       getData();
     };
-    subscribe('fetchChatList', callback);
+    on('fetchChatList', callback);
     return () => {
-      unsubscribe('fetchChatList', callback);
+      off('fetchChatList', callback);
       loadingRef.current = false;
     };
   }, []);
